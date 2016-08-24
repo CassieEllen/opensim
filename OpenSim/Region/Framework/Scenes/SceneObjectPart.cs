@@ -1965,6 +1965,8 @@ namespace OpenSim.Region.Framework.Scenes
         /// hook to the physics scene to apply impulse
         /// This is sent up to the group, which then finds the root prim
         /// and applies the force on the root prim of the group
+	/// <para>If the local frame is chosen, and this part is attached, then the
+	/// attachment orientation is used.
         /// </summary>
         /// <param name="impulsei">Vector force</param>
         /// <param name="localGlobalTF">true for the local frame, false for the global frame</param>
@@ -1975,6 +1977,25 @@ namespace OpenSim.Region.Framework.Scenes
             if (localGlobalTF)
             {
                 Quaternion grot = GetWorldRotation();
+
+		// This section was added from llGetRot() to use local orientation if this part is
+		// an attachment.
+		if (ParentGroup != null && ParentGroup.AttachmentPoint != 0)
+                {
+                    ScenePresence avatar = ParentGroup.Scene.GetScenePresence(ParentGroup.AttachedAvatar);
+                    if (avatar != null)
+                    {
+                        if ((avatar.AgentControlFlags & (uint)AgentManager.ControlFlags.AGENT_CONTROL_MOUSELOOK) != 0)
+			{
+                            grot = avatar.CameraRotation * grot; // Mouselook
+                        }
+			else
+			{
+                            grot = avatar.Rotation * grot; // Currently infrequently updated so may be inaccurate
+			}
+                    }
+                }
+				
                 Quaternion AXgrot = grot;
                 Vector3 AXimpulsei = impulsei;
                 Vector3 newimpulse = AXimpulsei * AXgrot;
